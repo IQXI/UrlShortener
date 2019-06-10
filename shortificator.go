@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"math/rand"
 )
 
 type Shortener interface {
@@ -16,26 +17,37 @@ type url struct {
 }
 
 func (u url) Shorten(s string) string {
-	h := md5.New()
-	h.Write([]byte(s))
-	shorten_url := "http:\\\\iq.xi\\" + hex.EncodeToString(h.Sum(nil)[:5])
+	shorten_url := ""
+	temp_s := s
+	for {
+		h := md5.New()
+		h.Write([]byte(temp_s))
+		shorten_url = "http://iq.xi/" + hex.EncodeToString(h.Sum(nil)[:5])
+		if _, ok := u.global_map[shorten_url]; ok {
+			temp_s += string(rand.Int())
+		} else {
+			break
+		}
+	}
+
 	u.global_map[shorten_url] = s
+
 	return shorten_url
 }
 
 func (u url) Resolve(s string) string {
-	if original_url, ok := u.global_map[s]; ok == true {
-		return string(original_url)
-	} else {
-		return ""
-	}
+	return string(u.global_map[s])
 }
 
 func main() {
-	link := "http:\\\\google.com"
+
 	var u Shortener = url{global_map: make(map[string]string)}
-	var short_u = u.Shorten(link)
-	var long_u = u.Resolve(short_u)
-	fmt.Println(short_u)
-	fmt.Println(long_u)
+	link := "http://google.com"
+
+	for i := 0; i < 10; i++ {
+		var short_u = u.Shorten(link)
+		var original_u = u.Resolve(short_u)
+		fmt.Println("Short URL:", short_u, "Original URL:", original_u, "Count: ", i)
+	}
+
 }
